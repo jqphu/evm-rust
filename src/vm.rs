@@ -6,14 +6,3 @@ impl Vm {
         println!("Executing");
     }
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn vm() {
-        let vm = Vm {};
-        vm.exec();
-    }
-}
