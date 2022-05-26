@@ -12,3 +12,14 @@ repos:
     - id: fmt
     - id: cargo-check
     - id: clippy
+# Current repo hooks
+- repo: local
+  hooks:
+  - id: test
+    name: test
+    description: Test with cargo test.
+    entry: cargo test
+    language: system
+    pass_filenames: false
+    always_run: false
+    fail_fast: true

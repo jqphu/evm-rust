@@ -53,6 +53,56 @@ impl<'a> Vm<'a> {
 
             match instruction {
                 Instruction::Stop => return Ok(()),
+                Instruction::Add => {
+                    let a = self.stack.pop()?;
+                    let b = self.stack.pop()?;
+
+                    let (addition, _) = a.overflowing_add(b);
+
+                    self.stack.push(addition);
+                }
+
+                Instruction::Sub => {
+                    let a = self.stack.pop()?;
+                    let b = self.stack.pop()?;
+
+                    let (subtraction, _) = a.overflowing_sub(b);
+
+                    self.stack.push(subtraction);
+                }
+
+                Instruction::AddMod => {
+                    let a = self.stack.pop()?;
+                    let b = self.stack.pop()?;
+                    let modulus = self.stack.pop()?;
+
+                    let (addition, _) = a.overflowing_add(b);
+
+                    self.stack.push(addition % modulus);
+                }
+
+                Instruction::Mod => {
+                    let a = self.stack.pop()?;
+                    let b = self.stack.pop()?;
+
+                    self.stack.push(a % b);
+                }
+
+                Instruction::SMod => {
+                    let a = self.stack.pop()?;
+                    let b = self.stack.pop()?;
+
+                    // TODO(jqphu): run a test for signed mod.
+                    self.stack.push(((a % b) + b) % b);
+                }
+
+                Instruction::Eq => {
+                    let a = self.stack.pop()?;
+                    let b = self.stack.pop()?;
+
+                    self.stack.push(U256::from((a == b) as u8));
+                }
+
                 Instruction::Push32 => {
                     let value = self.read_bytes(32);
                     self.stack.push(value);
@@ -65,15 +115,6 @@ impl<'a> Vm<'a> {
                     self.stack.push(value);
 
                     self.pc += 1;
-                }
-
-                Instruction::Add => {
-                    let a = self.stack.pop()?;
-                    let b = self.stack.pop()?;
-
-                    let (addition, _) = a.overflowing_add(b);
-
-                    self.stack.push(addition);
                 }
 
                 Instruction::SStore => {

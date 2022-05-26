@@ -9,6 +9,21 @@ pub enum Instruction {
     /// Adding operation
     Add = 0x01,
 
+    /// Subtraction
+    Sub = 0x03,
+
+    /// Modulus
+    Mod = 0x06,
+
+    /// Signed Modulus
+    SMod = 0x07,
+
+    /// Add then mod.
+    AddMod = 0x08,
+
+    /// Equality
+    Eq = 0x14,
+
     /// Save word to storage.
     SStore = 0x55,
 
