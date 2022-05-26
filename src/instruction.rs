@@ -8,18 +8,26 @@ pub enum Instruction {
     Stop = 0x00,
     /// Adding operation
     Add = 0x01,
-
+    /// Multiply
+    Mul = 0x02,
     /// Subtraction
     Sub = 0x03,
-
+    /// Division
+    Div = 0x04,
+    /// Signed Division
+    SDiv = 0x05,
     /// Modulus
     Mod = 0x06,
-
     /// Signed Modulus
     SMod = 0x07,
-
     /// Add then mod.
     AddMod = 0x08,
+    /// Multiply then mod.
+    MulMod = 0x09,
+    /// Exponent.
+    Exp = 0x0a,
+    /// Extend length of two's complement signed integer.
+    SignExtend = 0x0b,
 
     /// Equality
     Eq = 0x14,

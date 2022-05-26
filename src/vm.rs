@@ -57,18 +57,79 @@ impl<'a> Vm<'a> {
                     let a = self.stack.pop()?;
                     let b = self.stack.pop()?;
 
-                    let (addition, _) = a.overflowing_add(b);
+                    self.stack.push(a.overflowing_add(b).0);
+                }
 
-                    self.stack.push(addition);
+                Instruction::Mul => {
+                    let a = self.stack.pop()?;
+                    let b = self.stack.pop()?;
+
+                    self.stack.push(a.overflowing_mul(b).0);
                 }
 
                 Instruction::Sub => {
                     let a = self.stack.pop()?;
                     let b = self.stack.pop()?;
 
-                    let (subtraction, _) = a.overflowing_sub(b);
+                    self.stack.push(a.overflowing_sub(b).0);
+                }
 
-                    self.stack.push(subtraction);
+                Instruction::Div => {
+                    let a = self.stack.pop()?;
+                    let b = self.stack.pop()?;
+
+                    self.stack
+                        .push(if b.is_zero() { U256::zero() } else { a / b });
+                }
+
+                Instruction::SDiv => {
+                    let (a_abs, sign_a) = get_and_clear_sign(self.stack.pop()?);
+                    let (b_abs, sign_b) = get_and_clear_sign(self.stack.pop()?);
+
+                    // Minimum value representable
+                    let min = (U256::one() << 255) - U256::one();
+
+                    // If it's zero, just return zero.
+                    self.stack.push(if b_abs.is_zero() {
+                        U256::zero()
+                    } else if a_abs == min && b_abs == !U256::zero() {
+                        min
+                    } else {
+                        let mut result = a_abs / b_abs;
+                        let should_negate = sign_a ^ sign_b;
+
+                        if should_negate {
+                            result = twos_complement(result)
+                        }
+
+                        result
+                    })
+                }
+
+                Instruction::Mod => {
+                    let a = self.stack.pop()?;
+                    let b = self.stack.pop()?;
+
+                    self.stack
+                        .push(if b.is_zero() { U256::zero() } else { a % b });
+                }
+
+                Instruction::SMod => {
+                    let (a_abs, signed) = get_and_clear_sign(self.stack.pop()?);
+                    let (b_abs, _) = get_and_clear_sign(self.stack.pop()?);
+
+                    self.stack.push(if b_abs.is_zero() {
+                        U256::zero()
+                    } else {
+                        let mut result = a_abs % b_abs;
+
+                        if signed {
+                            result = twos_complement(result);
+                        }
+
+                        // TODO(jqphu): run a test for signed mod.
+                        result
+                    })
                 }
 
                 Instruction::AddMod => {
@@ -76,24 +137,52 @@ impl<'a> Vm<'a> {
                     let b = self.stack.pop()?;
                     let modulus = self.stack.pop()?;
 
-                    let (addition, _) = a.overflowing_add(b);
-
-                    self.stack.push(addition % modulus);
+                    self.stack.push(if modulus.is_zero() {
+                        U256::zero()
+                    } else {
+                        // Need to do the modulus separately to be careful of overflowing U256.
+                        ((a % modulus) + (b % modulus)) % modulus
+                    });
                 }
 
-                Instruction::Mod => {
+                Instruction::MulMod => {
+                    let a = self.stack.pop()?;
+                    let b = self.stack.pop()?;
+                    let modulus = self.stack.pop()?;
+
+                    self.stack.push(if modulus.is_zero() {
+                        U256::zero()
+                    } else {
+                        // Need to do the modulus separately to be careful of overflowing U256.
+                        ((a % modulus) * (b % modulus)) % modulus
+                    });
+                }
+
+                Instruction::Exp => {
                     let a = self.stack.pop()?;
                     let b = self.stack.pop()?;
 
-                    self.stack.push(a % b);
+                    self.stack.push(a.overflowing_pow(b).0);
                 }
-
-                Instruction::SMod => {
-                    let a = self.stack.pop()?;
+                Instruction::SignExtend => {
                     let b = self.stack.pop()?;
+                    let x = self.stack.pop()?;
 
-                    // TODO(jqphu): run a test for signed mod.
-                    self.stack.push(((a % b) + b) % b);
+                    let original_length_bits = b
+                        .overflowing_add(U256::from(1_u8))
+                        .0
+                        .overflowing_mul(U256::from(8_u8))
+                        .0;
+                    let is_leading_set = b.bit(original_length_bits.as_usize());
+
+                    let mask = (U256::one() << b) - U256::one();
+                    self.stack.push(if is_leading_set {
+                        // Set everything as 1s.
+                        x | !mask
+                    } else {
+                        // Set everything else to 0s
+                        x & mask
+                    });
                 }
 
                 Instruction::Eq => {
@@ -134,6 +223,22 @@ impl<'a> Vm<'a> {
 
         U256::from(&self.code[self.pc..self.pc + bytes])
     }
+}
+
+fn get_and_clear_sign(value: U256) -> (U256, bool) {
+    let signed = value.bit(255);
+
+    if signed {
+        // Negate and add 1 to make it unsigned.
+        (twos_complement(value), true)
+    } else {
+        (value, false)
+    }
+}
+
+/// Get the two's complement of a number.
+fn twos_complement(value: U256) -> U256 {
+    (!U256::zero() ^ value).overflowing_add(U256::one()).0
 }
 
 /// EVM Stack used for convenience.

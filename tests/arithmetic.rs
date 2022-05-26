@@ -27,7 +27,16 @@ struct TestCase {
 fn arithmetic() {
     for entry in glob("**/arithmetic/*.json").expect("Failed to read glob pattern") {
         let path = entry.unwrap();
-        println!("running test: {}", path.display());
+        println!(
+            r#"
+
+        ################################################
+        {}
+        ################################################
+
+            "#,
+            path.display()
+        );
 
         let filename_without_extension = path.file_stem().unwrap();
 
@@ -54,11 +63,15 @@ fn arithmetic() {
         let vm = Vm::new(&mut storage);
         vm.exec(Transaction { code }).unwrap();
 
-        for (key, value) in expected_storage {
+        for (key, value) in &expected_storage {
             let key = H256::from_str(&format!("{:0>64}", key.split_at(2).1)).unwrap();
             let value = H256::from_str(&format!("{:0>64}", value.split_at(2).1)).unwrap();
 
             assert_eq!(storage.get(&key).unwrap(), &value);
         }
+
+        // Filter out zeros since the expected_storage won't have zeros.
+        storage.retain(|_, value| !value.is_zero());
+        assert_eq!(storage.len(), expected_storage.len());
     }
 }
