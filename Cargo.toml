@@ -12,4 +12,6 @@ license = "MIT OR Apache-2.0"
 ethereum-types = "0.13.1"
 bytes = "1.1.0"
 num_enum = "0.5.7"
+
+[dev-dependencies]
 hex-literal = "0.3.4"
