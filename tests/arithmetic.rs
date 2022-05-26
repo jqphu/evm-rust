@@ -24,8 +24,8 @@ struct TestCase {
 /// This is the ugliest code I have ever seen. Let's just make do with it and get through more
 /// tests then we can refactor it.
 #[test]
-fn addition() {
-    for entry in glob("**/arithmetic/tests/*.json").expect("Failed to read glob pattern") {
+fn arithmetic() {
+    for entry in glob("**/arithmetic/*.json").expect("Failed to read glob pattern") {
         let path = entry.unwrap();
         println!("running test: {}", path.display());
 
