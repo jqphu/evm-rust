@@ -1,3 +1,4 @@
+mod instruction;
 mod transaction;
 mod vm;
 
