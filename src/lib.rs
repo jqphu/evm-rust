@@ -1,3 +1,7 @@
+mod vm;
+
+pub use vm::Vm;
+
 #[cfg(test)]
 mod tests {
     #[test]
