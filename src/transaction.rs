@@ -18,7 +18,7 @@ mod tests {
     #[test]
     pub fn can_construct_transaction() {
         let _ = Transaction {
-            code: Bytes::from("0x7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff0160005500")
+            code: Bytes::from("hello world"),
         };
     }
 }
