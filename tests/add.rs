@@ -1,7 +1,10 @@
-use evm_rust::Vm;
+use bytes::Bytes;
+use evm_rust::{Transaction, Vm};
 
 #[test]
 fn add0() {
     let vm = Vm {};
-    vm.exec();
+    vm.exec(Transaction {
+        code: Bytes::from("asd"),
+    });
 }
