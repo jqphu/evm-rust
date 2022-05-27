@@ -23,6 +23,9 @@ pub struct Vm<'a> {
     /// EVM Stack
     stack: Stack,
 
+    /// Memory
+    memory: Vec<u8>,
+
     /// Storage referenced by this VM.
     storage: &'a mut HashMap<H256, H256>,
 
@@ -35,12 +38,13 @@ impl<'a> Vm<'a> {
         Vm {
             storage,
             code: Bytes::new(),
+            memory: [0; 1_048_576].to_vec(),
             stack: Stack::new(),
             pc: 0,
         }
     }
 
-    pub fn exec(mut self, transaction: Transaction) -> Result<(), Error> {
+    pub fn exec(mut self, transaction: Transaction) -> Result<Option<Vec<u8>>, Error> {
         info!(
             "
 
@@ -54,7 +58,7 @@ impl<'a> Vm<'a> {
 
         if self.code.is_empty() {
             info!("No code provided, exiting");
-            return Ok(());
+            return Ok(None);
         }
 
         loop {
@@ -74,7 +78,7 @@ impl<'a> Vm<'a> {
             self.pc += 1;
 
             match instruction {
-                Instruction::Stop => return Ok(()),
+                Instruction::Stop => return Ok(None),
                 Instruction::Add => {
                     let a = self.stack.pop()?;
                     let b = self.stack.pop()?;
@@ -331,11 +335,33 @@ impl<'a> Vm<'a> {
                     });
                 }
 
-                Instruction::Push32 => {
-                    let value = self.read_bytes(32);
-                    self.stack.push(value);
+                Instruction::MLoad => {
+                    let offset = self.stack.pop()?.as_usize();
 
-                    self.pc += 32;
+                    self.stack
+                        .push(U256::from(&self.memory[offset..offset + 32]));
+                }
+
+                Instruction::MStore => {
+                    let offset = self.stack.pop()?.as_usize();
+                    let value = self.stack.pop()?;
+
+                    value.to_big_endian(&mut self.memory[offset..offset + 32]);
+                }
+
+                Instruction::MStore8 => {
+                    let offset = self.stack.pop()?.as_usize();
+                    let value = self.stack.pop()?;
+
+                    self.memory[offset] = value.low_u32() as u8;
+                }
+
+                Instruction::SStore => {
+                    let key = self.stack.peek(0)?;
+                    let value = self.stack.peek(1)?;
+
+                    self.storage
+                        .insert(H256::from_uint(&key), H256::from_uint(&value));
                 }
 
                 Instruction::Push1 => {
@@ -345,12 +371,22 @@ impl<'a> Vm<'a> {
                     self.pc += 1;
                 }
 
-                Instruction::SStore => {
-                    let key = self.stack.peek(0)?;
-                    let value = self.stack.peek(1)?;
+                Instruction::Push32 => {
+                    let value = self.read_bytes(32);
+                    self.stack.push(value);
 
-                    self.storage
-                        .insert(H256::from_uint(&key), H256::from_uint(&value));
+                    self.pc += 32;
+                }
+
+                Instruction::Swap1 => {
+                    self.stack.inner.swap(0, 1);
+                }
+
+                Instruction::Return => {
+                    let offset = self.stack.pop()?.as_usize();
+                    let length = self.stack.pop()?.as_usize();
+
+                    return Ok(Some(self.memory[offset..offset + length].to_vec()));
                 }
             }
         }

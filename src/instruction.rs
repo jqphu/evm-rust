@@ -58,6 +58,12 @@ pub enum Instruction {
     /// Arithmetic (signed) shift right
     Sar = 0x1d,
 
+    /// Load from memory
+    MLoad = 0x51,
+    /// Store a word to memory
+    MStore = 0x52,
+    /// Store a byte to memory
+    MStore8 = 0x53,
     /// Save word to storage.
     SStore = 0x55,
 
@@ -65,4 +71,10 @@ pub enum Instruction {
     Push1 = 0x60,
     /// Push 32 bytes on the stack
     Push32 = 0x7F,
+
+    /// Swap 1st and 2nd stack items
+    Swap1 = 0x90,
+
+    /// Return
+    Return = 0xf3,
 }
