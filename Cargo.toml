@@ -12,8 +12,10 @@ license = "MIT OR Apache-2.0"
 ethereum-types = "0.13.1"
 bytes = "1.1.0"
 num_enum = "0.5.7"
+log = "0.4.17"
 
 [dev-dependencies]
+env_logger = "0.8.0"
 glob = "0.3.0"
 serde_json = "1.0.81"
 hex = "0.4.3"

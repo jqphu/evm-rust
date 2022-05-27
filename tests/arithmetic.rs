@@ -25,6 +25,8 @@ struct TestCase {
 /// tests then we can refactor it.
 #[test]
 fn arithmetic() {
+    env_logger::init();
+
     for entry in glob("**/arithmetic/*.json").expect("Failed to read glob pattern") {
         let path = entry.unwrap();
         println!(

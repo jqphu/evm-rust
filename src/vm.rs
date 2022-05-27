@@ -2,11 +2,14 @@ use crate::instruction::Instruction;
 use crate::Transaction;
 use bytes::Bytes;
 use ethereum_types::{BigEndianHash, H256, U256};
+use log::{debug, error, info, trace};
 use std::collections::HashMap;
 use std::vec::Vec;
 
 #[derive(Debug)]
 pub enum Error {
+    /// Invalid Instruction.
+    InvalidInstructionError,
     /// Stack error, likely popping too much or peeking too much.
     StackError,
 }
@@ -38,16 +41,35 @@ impl<'a> Vm<'a> {
     }
 
     pub fn exec(mut self, transaction: Transaction) -> Result<(), Error> {
+        info!(
+            "
+
+        ############################
+            Executing transaction
+        ############################
+            "
+        );
         self.code = transaction.code;
         self.pc = 0;
 
         if self.code.is_empty() {
+            info!("No code provided, exiting");
             return Ok(());
         }
 
         loop {
-            let instruction = Instruction::try_from(self.code[self.pc])
-                .expect("Must be able to unwrap. Valid codes only.");
+            let instruction = Instruction::try_from(self.code[self.pc]).map_err(|err| {
+                error!(
+                    "Unexpected instruction 0x{:x} err: {:?}",
+                    self.code[self.pc], err
+                );
+                Error::InvalidInstructionError
+            })?;
+
+            debug!("{:?}", instruction);
+            trace!("Pc: {:?}", self.pc);
+            trace!("Storage: {:?}", self.storage);
+            trace!("Stack: {:?}", self.stack);
 
             self.pc += 1;
 
