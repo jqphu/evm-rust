@@ -29,16 +29,7 @@ fn arithmetic() {
 
     for entry in glob("**/arithmetic/*.json").expect("Failed to read glob pattern") {
         let path = entry.unwrap();
-        println!(
-            r#"
-
-        ################################################
-        {}
-        ################################################
-
-            "#,
-            path.display()
-        );
+        println!("{}", path.display());
 
         let filename_without_extension = path.file_stem().unwrap();
 

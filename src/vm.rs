@@ -335,6 +335,10 @@ impl<'a> Vm<'a> {
                     });
                 }
 
+                Instruction::Pop => {
+                    self.stack.pop()?;
+                }
+
                 Instruction::MLoad => {
                     let offset = self.stack.pop()?.as_usize();
 
@@ -356,6 +360,13 @@ impl<'a> Vm<'a> {
                     self.memory[offset] = value.low_u32() as u8;
                 }
 
+                Instruction::SLoad => {
+                    let key = self.stack.pop()?;
+
+                    self.stack
+                        .push(self.storage[&H256::from_uint(&key)].into_uint());
+                }
+
                 Instruction::SStore => {
                     let key = self.stack.peek(0)?;
                     let value = self.stack.peek(1)?;
@@ -364,22 +375,88 @@ impl<'a> Vm<'a> {
                         .insert(H256::from_uint(&key), H256::from_uint(&value));
                 }
 
-                Instruction::Push1 => {
-                    let value = self.read_bytes(1);
-                    self.stack.push(value);
+                Instruction::Jump => {
+                    let destination = self.stack.pop()?;
 
-                    self.pc += 1;
+                    self.pc = destination.as_usize();
                 }
 
-                Instruction::Push32 => {
-                    let value = self.read_bytes(32);
-                    self.stack.push(value);
+                Instruction::JumpI => {
+                    let destination = self.stack.pop()?;
+                    let condition = self.stack.pop()?;
 
-                    self.pc += 32;
+                    if !condition.is_zero() {
+                        self.pc = destination.as_usize();
+                    }
                 }
 
-                Instruction::Swap1 => {
-                    self.stack.inner.swap(0, 1);
+                Instruction::PC => {
+                    // Remove the additional bump of the PC above.
+                    self.stack.push(U256::from(self.pc - 1));
+                }
+
+                // No-op
+                Instruction::JumpDest => {}
+                // TODO(jqphu): macroify all of this.
+                Instruction::Push1
+                | Instruction::Push2
+                | Instruction::Push3
+                | Instruction::Push4
+                | Instruction::Push5
+                | Instruction::Push6
+                | Instruction::Push7
+                | Instruction::Push8
+                | Instruction::Push9
+                | Instruction::Push10
+                | Instruction::Push11
+                | Instruction::Push12
+                | Instruction::Push13
+                | Instruction::Push14
+                | Instruction::Push15
+                | Instruction::Push16
+                | Instruction::Push17
+                | Instruction::Push18
+                | Instruction::Push19
+                | Instruction::Push20
+                | Instruction::Push21
+                | Instruction::Push22
+                | Instruction::Push23
+                | Instruction::Push24
+                | Instruction::Push25
+                | Instruction::Push26
+                | Instruction::Push27
+                | Instruction::Push28
+                | Instruction::Push29
+                | Instruction::Push30
+                | Instruction::Push31
+                | Instruction::Push32 => {
+                    let bytes = instruction.push_bytes().unwrap();
+
+                    let value = self.read_bytes(bytes);
+                    self.stack.push(value);
+
+                    self.pc += bytes;
+                }
+
+                Instruction::Swap1
+                | Instruction::Swap2
+                | Instruction::Swap3
+                | Instruction::Swap4
+                | Instruction::Swap5
+                | Instruction::Swap6
+                | Instruction::Swap7
+                | Instruction::Swap8
+                | Instruction::Swap9
+                | Instruction::Swap10
+                | Instruction::Swap11
+                | Instruction::Swap12
+                | Instruction::Swap13
+                | Instruction::Swap14
+                | Instruction::Swap15
+                | Instruction::Swap16 => {
+                    let position = instruction.swap_position().unwrap();
+
+                    self.stack.inner.swap(0, position);
                 }
 
                 Instruction::Return => {
