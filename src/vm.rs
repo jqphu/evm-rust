@@ -185,11 +185,128 @@ impl<'a> Vm<'a> {
                     });
                 }
 
+                Instruction::Lt => {
+                    let a = self.stack.pop()?;
+                    let b = self.stack.pop()?;
+
+                    self.stack.push(U256::from((a < b) as u8));
+                }
+
+                Instruction::Gt => {
+                    let a = self.stack.pop()?;
+                    let b = self.stack.pop()?;
+
+                    self.stack.push(U256::from((a > b) as u8));
+                }
+
+                Instruction::Slt => {
+                    let (a_abs, a_sign) = get_and_clear_sign(self.stack.pop()?);
+                    let (b_abs, b_sign) = get_and_clear_sign(self.stack.pop()?);
+
+                    self.stack.push(
+                        // Both positive
+                        if !a_sign && !b_sign {
+                            U256::from((a_abs < b_abs) as u8)
+                            // A is negative.
+                        } else if a_sign && !b_sign {
+                            U256::from(true as u8)
+                            // A is positive, b is negative
+                        } else if !a_sign && b_sign {
+                            U256::from(false as u8)
+                            // Both negative, so reverse the check.
+                        } else {
+                            U256::from((b_abs < a_abs) as u8)
+                        },
+                    );
+                }
+
+                Instruction::Sgt => {
+                    let (a_abs, a_sign) = get_and_clear_sign(self.stack.pop()?);
+                    let (b_abs, b_sign) = get_and_clear_sign(self.stack.pop()?);
+
+                    self.stack.push(
+                        // Both positive
+                        if !a_sign && !b_sign {
+                            U256::from((a_abs > b_abs) as u8)
+                            // A is negative.
+                        } else if a_sign && !b_sign {
+                            U256::from(false as u8)
+                            // A is positive, b is negative
+                        } else if !a_sign && b_sign {
+                            U256::from(true as u8)
+                            // Both negative, so reverse the check.
+                        } else {
+                            U256::from((b_abs > a_abs) as u8)
+                        },
+                    );
+                }
+
                 Instruction::Eq => {
                     let a = self.stack.pop()?;
                     let b = self.stack.pop()?;
 
                     self.stack.push(U256::from((a == b) as u8));
+                }
+
+                Instruction::IsZero => {
+                    let a = self.stack.pop()?;
+                    self.stack.push(U256::from(a.is_zero() as u8));
+                }
+
+                Instruction::And => {
+                    let a = self.stack.pop()?;
+                    let b = self.stack.pop()?;
+                    self.stack.push(a & b);
+                }
+
+                Instruction::Or => {
+                    let a = self.stack.pop()?;
+                    let b = self.stack.pop()?;
+                    self.stack.push(a | b);
+                }
+
+                Instruction::Xor => {
+                    let a = self.stack.pop()?;
+                    let b = self.stack.pop()?;
+                    self.stack.push(a ^ b);
+                }
+
+                Instruction::Not => {
+                    let a = self.stack.pop()?;
+                    self.stack.push(!a);
+                }
+
+                Instruction::Byte => {
+                    let i = self.stack.pop()?;
+                    let x = self.stack.pop()?;
+                    self.stack.push(U256::from(x.byte(i.as_usize())));
+                }
+
+                Instruction::Shl => {
+                    let shift = self.stack.pop()?;
+                    let value = self.stack.pop()?;
+                    // TODO(jqphu): check if overflow already handled.
+                    self.stack.push(value << shift.as_usize());
+                }
+
+                Instruction::Shr => {
+                    let shift = self.stack.pop()?;
+                    let value = self.stack.pop()?;
+                    self.stack.push(value >> shift.as_usize());
+                }
+
+                Instruction::Sar => {
+                    let shift = self.stack.pop()?;
+                    let (value_abs, value_sign) = get_and_clear_sign(self.stack.pop()?);
+
+                    let shifted_value = value_abs << shift;
+                    let top_bit = U256::one() << 255;
+
+                    self.stack.push(if value_sign {
+                        shifted_value | top_bit
+                    } else {
+                        shifted_value
+                    });
                 }
 
                 Instruction::Push32 => {

@@ -29,8 +29,34 @@ pub enum Instruction {
     /// Extend length of two's complement signed integer.
     SignExtend = 0x0b,
 
+    /// Less than.
+    Lt = 0x10,
+    /// Greater than.
+    Gt = 0x11,
+    /// Signed Less than
+    Slt = 0x12,
+    /// Signed Greater than.
+    Sgt = 0x13,
     /// Equality
     Eq = 0x14,
+    /// Is Zero
+    IsZero = 0x15,
+    /// And
+    And = 0x16,
+    /// Or
+    Or = 0x17,
+    /// Xor
+    Xor = 0x18,
+    /// Not
+    Not = 0x19,
+    /// Byte
+    Byte = 0x1a,
+    /// Shift left
+    Shl = 0x1b,
+    /// Shift right
+    Shr = 0x1c,
+    /// Arithmetic (signed) shift right
+    Sar = 0x1d,
 
     /// Save word to storage.
     SStore = 0x55,
