@@ -11,6 +11,7 @@ use std::str::FromStr;
 #[derive(Deserialize)]
 struct Exec {
     code: String,
+    data: String,
 }
 
 #[derive(Deserialize)]
@@ -44,6 +45,7 @@ fn arithmetic() {
         };
 
         let code = Bytes::from(hex::decode(exec.code.split_at(2).1).unwrap());
+        let data = Bytes::from(hex::decode(exec.data.split_at(2).1).unwrap());
 
         let expected_storage: HashMap<String, String> = {
             serde_json::from_value(
@@ -54,7 +56,7 @@ fn arithmetic() {
 
         let mut storage = HashMap::<H256, H256>::new();
         let vm = Vm::new(&mut storage);
-        vm.exec(Transaction { code }).unwrap();
+        vm.exec(Transaction { code, data }).unwrap();
 
         for (key, value) in &expected_storage {
             let key = H256::from_str(&format!("{:0>64}", key.split_at(2).1)).unwrap();

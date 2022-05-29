@@ -58,6 +58,12 @@ pub enum Instruction {
     /// Arithmetic (signed) shift right
     Sar = 0x1d,
 
+    /// Load the calldata.
+    CallDataLoad = 0x35,
+
+    /// Get calldata size.
+    CallDataSize = 0x36,
+
     /// Pop from the stack.
     Pop = 0x50,
     /// Load from memory
@@ -114,7 +120,25 @@ pub enum Instruction {
     Push31 = 0x7e,
     Push32 = 0x7f,
 
-    /// Swap 1st and 2nd stack items
+    // Duplicate the nth stack item.
+    Dup1 = 0x80,
+    Dup2 = 0x81,
+    Dup3 = 0x82,
+    Dup4 = 0x83,
+    Dup5 = 0x84,
+    Dup6 = 0x85,
+    Dup7 = 0x86,
+    Dup8 = 0x87,
+    Dup9 = 0x88,
+    Dup10 = 0x89,
+    Dup11 = 0x8a,
+    Dup12 = 0x8b,
+    Dup13 = 0x8c,
+    Dup14 = 0x8d,
+    Dup15 = 0x8e,
+    Dup16 = 0x8f,
+
+    /// Swap 1st and (n+1)th stack item.
     Swap1 = 0x90,
     Swap2 = 0x91,
     Swap3 = 0x92,
@@ -159,6 +183,16 @@ impl Instruction {
     pub fn swap_position(&self) -> Option<usize> {
         if *self >= Swap1 && *self <= Swap16 {
             Some(((*self as u8) - (Swap1 as u8) + 1) as usize)
+        } else {
+            None
+        }
+    }
+
+    /// Returns stack position of item to SWAP top with
+    /// SWAP0 -> 0
+    pub fn dup_position(&self) -> Option<usize> {
+        if *self >= Dup1 && *self <= Dup16 {
+            Some(((*self as u8) - (Dup1 as u8)) as usize)
         } else {
             None
         }

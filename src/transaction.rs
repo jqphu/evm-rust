@@ -8,7 +8,11 @@ use bytes::Bytes;
 /// This is intentionally incomplete and we will slowly expand it as we require the fields.
 #[derive(Debug)]
 pub struct Transaction {
+    /// Code to be executed.
     pub code: Bytes,
+
+    /// Call data.
+    pub data: Bytes,
 }
 
 #[cfg(test)]
@@ -19,6 +23,7 @@ mod tests {
     pub fn can_construct_transaction() {
         let _ = Transaction {
             code: Bytes::from("hello world"),
+            data: Bytes::from("asd"),
         };
     }
 }

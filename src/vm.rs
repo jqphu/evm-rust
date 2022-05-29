@@ -20,6 +20,9 @@ pub struct Vm<'a> {
     /// The code we're executing.
     code: Bytes,
 
+    /// CallData bytes.
+    data: Bytes,
+
     /// EVM Stack
     stack: Stack,
 
@@ -38,6 +41,7 @@ impl<'a> Vm<'a> {
         Vm {
             storage,
             code: Bytes::new(),
+            data: Bytes::new(),
             memory: [0; 1_048_576].to_vec(),
             stack: Stack::new(),
             pc: 0,
@@ -54,6 +58,7 @@ impl<'a> Vm<'a> {
             "
         );
         self.code = transaction.code;
+        self.data = transaction.data;
         self.pc = 0;
 
         if self.code.is_empty() {
@@ -62,6 +67,10 @@ impl<'a> Vm<'a> {
         }
 
         loop {
+            if self.pc >= self.code.len() {
+                return Ok(None);
+            }
+
             let instruction = Instruction::try_from(self.code[self.pc]).map_err(|err| {
                 error!(
                     "Unexpected instruction 0x{:x} err: {:?}",
@@ -193,22 +202,34 @@ impl<'a> Vm<'a> {
                 Instruction::SignExtend => {
                     let b = self.stack.pop()?;
                     let x = self.stack.pop()?;
+                    debug!("b: 0x{:x}, x: 0x{:x}", b, x);
 
-                    let original_length_bits = b
-                        .overflowing_add(U256::from(1_u8))
-                        .0
-                        .overflowing_mul(U256::from(8_u8))
-                        .0;
-                    let is_leading_set = b.bit(original_length_bits.as_usize());
-
-                    let mask = (U256::one() << b) - U256::one();
-                    self.stack.push(if is_leading_set {
-                        // Set everything as 1s.
-                        x | !mask
+                    if b >= U256::from(32) {
+                        self.stack.push(x)
                     } else {
-                        // Set everything else to 0s
-                        x & mask
-                    });
+                        let original_length_bits = b
+                            .overflowing_add(U256::from(1_u8))
+                            .0
+                            .overflowing_mul(U256::from(8_u8))
+                            .0;
+
+                        let is_leading_set = x.bit(original_length_bits.as_usize() - 1);
+                        debug!(
+                            "original_length_bits {}, is leading set {}",
+                            original_length_bits, is_leading_set
+                        );
+
+                        let mask = (U256::one() << original_length_bits) - U256::one();
+
+                        debug!("mask: {:?}", mask);
+                        self.stack.push(if is_leading_set {
+                            // Set everything as 1s.
+                            x | !mask
+                        } else {
+                            // Set everything else to 0s
+                            x & mask
+                        });
+                    }
                 }
 
                 Instruction::Lt => {
@@ -335,6 +356,16 @@ impl<'a> Vm<'a> {
                     });
                 }
 
+                Instruction::CallDataLoad => {
+                    let i = self.stack.pop()?.as_usize();
+
+                    self.stack.push(U256::from(&self.data[i..i + 32]));
+                }
+
+                Instruction::CallDataSize => {
+                    self.stack.push(U256::from(self.data.len()));
+                }
+
                 Instruction::Pop => {
                     self.stack.pop()?;
                 }
@@ -457,6 +488,27 @@ impl<'a> Vm<'a> {
                     let position = instruction.swap_position().unwrap();
 
                     self.stack.inner.swap(0, position);
+                }
+
+                Instruction::Dup1
+                | Instruction::Dup2
+                | Instruction::Dup3
+                | Instruction::Dup4
+                | Instruction::Dup5
+                | Instruction::Dup6
+                | Instruction::Dup7
+                | Instruction::Dup8
+                | Instruction::Dup9
+                | Instruction::Dup10
+                | Instruction::Dup11
+                | Instruction::Dup12
+                | Instruction::Dup13
+                | Instruction::Dup14
+                | Instruction::Dup15
+                | Instruction::Dup16 => {
+                    let position = instruction.dup_position().unwrap();
+
+                    self.stack.push(self.stack.peek(position).unwrap());
                 }
 
                 Instruction::Return => {
