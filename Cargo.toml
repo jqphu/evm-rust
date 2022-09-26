@@ -9,7 +9,7 @@ license = "MIT OR Apache-2.0"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-ethereum-types = "0.13.1"
+ethereum-types = "0.14.0"
 bytes = "1.1.0"
 num_enum = "0.5.7"
 log = "0.4.17"
