@@ -17,6 +17,6 @@ log = "0.4.17"
 [dev-dependencies]
 env_logger = "0.8.0"
 glob = "0.3.0"
-serde_json = "1.0.81"
+serde_json = "1.0.86"
 hex = "0.4.3"
 serde = { version = "1.0", features = ["derive"] }
