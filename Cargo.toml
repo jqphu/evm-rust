@@ -11,7 +11,7 @@ license = "MIT OR Apache-2.0"
 [dependencies]
 ethereum-types = "0.13.1"
 bytes = "1.1.0"
-num_enum = "0.5.7"
+num_enum = "0.5.10"
 log = "0.4.17"
 
 [dev-dependencies]
